@@ -7,7 +7,11 @@ import jxl.Workbook;
 import jxl.read.biff.BiffException;
 import jxl.write.*;
 
-import org.json.*;
+import com.alibaba.fastjson.*;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 
 public class ExcelTxt {
 
@@ -94,55 +98,46 @@ public class ExcelTxt {
         }
     }
 
-    public static void main(String[] args) throws JSONException {
+    public static void writeXlsx(String filePath) throws IOException {
 
-        String excelPath = "/Users/wuyong/SparksInterface/Validator/ImportSchedule/VerticalVersion.xls";
-        String timetableInfo = "/Users/wuyong/SparksInterface/Validator/ImportSchedule/course.txt";
+        FileInputStream fs = new FileInputStream(filePath);
+        POIFSFileSystem pfs = new POIFSFileSystem(fs);
+        XSSFWorkbook wb = new XSSFWorkbook(String.valueOf(pfs));
+
+        XSSFSheet sheet = wb.getSheetAt(0);
+
+        FileOutputStream out = new FileOutputStream(filePath);
+
+    }
+
+    public static void main(String[] args) throws JSONException, IOException {
+
+        String excelPath = "/Users/wuyong/SparksInterface/Validator/ImportSchedule/test.xlsx";
+        String jsonFile = "/Users/wuyong/Documents/GitHub/ExcelHanlder/ExcelHandler/course.json";
 
 
         ExcelTxt excelTxt = new ExcelTxt();
 
-        List<String> data = excelTxt.getCourseInfo(timetableInfo);
+        FileInputStream fileInputStream = new FileInputStream(jsonFile);
+        InputStreamReader reader = new InputStreamReader(fileInputStream);
+        BufferedReader bufferedReader = new BufferedReader(reader);
 
-        int row = Integer.parseInt(excelTxt.count(data.get(0)));
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
 
-        int col = Integer.parseInt(excelTxt.count(data.get(1)));
-
-//        System.out.println(row + "-" + col);
-
-        String[] course = excelTxt.courseList(data.get(2));
-
-
-//        JSONArray timetableList = new JSONArray();
-        JSONObject timetables = new JSONObject();
-
-        List list = new ArrayList();
-
-        for (int r = 3; r < row; r++) {
-            for (int c = 1; c < col; c++) {
-
-                JSONObject timetable = new JSONObject();
-
-                timetable.put("row", r);
-                timetable.put("col", c);
-                timetable.put("course", course[excelTxt.randomInt(course.length)]);
-
-                list.add(timetable);
-
-            }
+        while ((line = bufferedReader.readLine()) != null) {
+            stringBuilder.append(line);
         }
-        timetables.put("timetable", list);
 
-//        System.out.println(timetables);
-        JSONArray jsonArray = (JSONArray) timetables.get("timetable");
-
+//        System.out.println(stringBuilder);
+        JSONArray jsonArray = JSON.parseArray(String.valueOf(stringBuilder));
 
 //        System.out.println(jsonArray);
-        for (int i = 0; i < jsonArray.length(); i++) {
+        for (Object aJsonArray : jsonArray) {
 
-            JSONObject cellData = (JSONObject) jsonArray.get(i);
-            int cellRow = cellData.getInt("row");
-            int cellCol = cellData.getInt("col");
+            JSONObject cellData = (JSONObject) aJsonArray;
+            int cellRow = cellData.getIntValue("row");
+            int cellCol = cellData.getIntValue("col");
             String value = cellData.getString("course");
 
             excelTxt.writeExcel(excelPath, cellCol, cellRow, value);
